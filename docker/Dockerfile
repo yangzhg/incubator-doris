@@ -29,7 +29,7 @@ enabled=1' >> /etc/yum.repos.d/CentOS-SCLo-scl.ol.repo
 # install dependencies
 RUN yum makecache && yum -y update && yum -y groupinstall 'Development Tools' && \
     yum install -y byacc flex automake java-11-openjdk-devel libtool bison binutils-devel zip unzip \
-    ncurses-devel curl git wget python2 glibc-static deltarpm libstdc++-static which psl libpsl-devel && \
+    ncurses-devel curl git wget python2 glibc-static libstdc++-static which psl libpsl-devel && \
     wget http://public-yum.oracle.com/RPM-GPG-KEY-oracle-ol7 -O /etc/pki/rpm-gpg/RPM-GPG-KEY-oracle && \
     rpm --import  /etc/pki/rpm-gpg/RPM-GPG-KEY-* && \
     yum install -y devtoolset-10-gcc* 
