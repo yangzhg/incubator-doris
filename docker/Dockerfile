@@ -28,9 +28,11 @@ enabled=1' >> /etc/yum.repos.d/CentOS-SCLo-scl.ol.repo
 
 # install dependencies
 RUN yum makecache && yum -y update && yum -y groupinstall 'Development Tools' && \
-    yum install -y byacc flex automake java-11-openjdk-devel libtool bison binutils-devel zip unzip \
-    ncurses-devel curl git wget python2 glibc-static libstdc++-static which psl libpsl-devel && \
-    wget http://public-yum.oracle.com/RPM-GPG-KEY-oracle-ol7 -O /etc/pki/rpm-gpg/RPM-GPG-KEY-oracle && \
+    yum install -y byacc automake java-11-openjdk-devel libtool bison binutils-devel zip unzip \
+    ncurses-devel curl git wget python2 glibc-static libstdc++-static which psl libpsl-devel
+
+# install gcc10
+RUN wget http://public-yum.oracle.com/RPM-GPG-KEY-oracle-ol7 -O /etc/pki/rpm-gpg/RPM-GPG-KEY-oracle && \
     rpm --import  /etc/pki/rpm-gpg/RPM-GPG-KEY-* && \
     yum install -y devtoolset-10-gcc* 
 
@@ -61,6 +63,20 @@ RUN mkdir -p /usr/share/maven /usr/share/maven/ref && \
     ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
 
 ENV MAVEN_HOME /usr/share/maven
+
+# build flex
+ARG FLEX_VERSION=2.6.4
+RUN wget https://github.com/westes/flex/releases/download/v$FLEX_VERSION/flex-$FLEX_VERSION.tar.gz \
+    -q -O /tmp/flex-$FLEX_VERSION.tar.gz \
+    && cd /tmp/ \
+    && tar -xf flex-$FLEX_VERSION.tar.gz \
+    && cd flex-$FLEX_VERSION \
+    && ./configure --enable-shared=NO \
+    && make \
+    && make install \
+    && rm /tmp/flex-$FLEX_VERSION.tar.gz \
+    && rm -rf /tmp/flex-$FLEX_VERSION
+
 ENV BASH_ENV=/opt/rh/devtoolset-10/enable  \
     ENV=/opt/rh/devtoolset-10/enable  \
     PROMPT_COMMAND=". /opt/rh/devtoolset-10/enable"
@@ -81,4 +97,3 @@ RUN cd ${DEFAULT_DIR}/incubator-doris && /bin/bash thirdparty/build-thirdparty.s
 
 ENV DORIS_THIRDPARTY /var/local/thirdparty
 WORKDIR /root
-
