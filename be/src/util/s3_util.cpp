@@ -44,7 +44,9 @@ std::unique_ptr<Aws::S3::S3Client> create_client(const std::map<std::string, std
         DCHECK(!aws_cred.IsExpiredOrEmpty());
         aws_config.endpointOverride = properties.find(S3_ENDPOINT)->second;
         aws_config.region = properties.find(S3_REGION)->second;
-        client.reset(new Aws::S3::S3Client(aws_cred, aws_config));
+        client.reset(new Aws::S3::S3Client(
+                aws_cred, aws_config, Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
+                true));
     } else {
         client.reset(nullptr);
     }
