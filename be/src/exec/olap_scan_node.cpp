@@ -781,27 +781,14 @@ Status OlapScanNode::start_scan_thread(RuntimeState* state) {
                 segment_split = all_segments;
             }
         }
-        if (segment_split) {
-            for (auto& range : *ranges) {
-                OlapScanner* scanner = new OlapScanner(
-                        state, this, _olap_scan_node.is_preaggregation, _need_agg_finalize);
-                std::vector<OlapScanRange*> scanner_ranges;
-                scanner_ranges.push_back(range.get());
-                RETURN_IF_ERROR(scanner->prepare(*scan_range, scanner_ranges, _olap_filter,
-                                                 _bloom_filters_push_down));
-
-                _scanner_pool->add(scanner);
-                _olap_scanners.push_back(scanner);
-                disk_set.insert(scanner->scan_disk());
-            }
-        } else {
-            int scanners_per_tablet = std::max(1, 64 / (int)_scan_ranges.size());
-            int ranges_per_scanner = std::max(1, (int)ranges->size() / scanners_per_tablet);
-            int num_ranges = ranges->size();
-            for (int i = 0; i < num_ranges;) {
-                std::vector<OlapScanRange*> scanner_ranges;
-                scanner_ranges.push_back((*ranges)[i].get());
-                ++i;
+        int scanners_per_tablet = std::max(1, 64 / (int)_scan_ranges.size());
+        int ranges_per_scanner = std::max(1, (int)ranges->size() / scanners_per_tablet);
+        int num_ranges = ranges->size();
+        for (int i = 0; i < num_ranges;) {
+            std::vector<OlapScanRange*> scanner_ranges;
+            scanner_ranges.push_back((*ranges)[i].get());
+            ++i;
+            if (!segment_split) {
                 for (int j = 1; i < num_ranges && j < ranges_per_scanner &&
                                 (*ranges)[i]->end_include == (*ranges)[i - 1]->end_include;
                      ++j, ++i) {
@@ -812,6 +799,8 @@ Status OlapScanNode::start_scan_thread(RuntimeState* state) {
                 // add scanner to pool before doing prepare.
                 // so that scanner can be automatically deconstructed if prepare failed.
                 _scanner_pool->add(scanner);
+                RETURN_IF_ERROR(scanner->prepare(*scan_range, scanner_ranges, _olap_filter,
+                                                 _bloom_filters_push_down));
                 _olap_scanners.push_back(scanner);
                 disk_set.insert(scanner->scan_disk());
             }
